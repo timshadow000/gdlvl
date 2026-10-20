@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GD Level Generator | Cherry Glass</title>
+    <style>
+        :root {
+            --bg-dark: #0a0406;
+            --glass-bg: rgba(30, 10, 18, 0.4);
+            --glass-border: rgba(255, 50, 100, 0.15);
+            --glass-highlight: rgba(255, 100, 130, 0.2);
+            --accent-cherry: #ff3366;
+            --accent-wine: #990033;
+            --accent-light: #ff6688;
+            --text-main: #ffffff;
+            --text-muted: #b88a97;
+            --log-success: #00ff88;
+            --log-error: #ff3366;
+            --log-info: #ff99bb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ====== ФОН ====== */
+        .bg-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            background: radial-gradient(circle at 10% 20%, rgba(153, 0, 51, 0.3), transparent 50%),
+                        radial-gradient(circle at 90% 80%, rgba(255, 51, 102, 0.2), transparent 50%);
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.5;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+
+        .orb-1 { width: 600px; height: 600px; background: #990033; top: -100px; left: -100px; }
+        .orb-2 { width: 500px; height: 500px; background: #ff3366; bottom: -100px; right: -100px; animation-delay: -5s; }
+        .orb-3 { width: 400px; height: 400px; background: #c9184a; top: 40%; left: 40%; animation-duration: 25s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(80px, 40px) scale(1.15); }
+        }
+
+        /* ====== НАВИГАЦИЯ ====== */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(10, 4, 6, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-light), var(--accent-wine));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-left: 30px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover { color: var(--accent-cherry); }
+
+        /* ====== LAYOUT ====== */
+        .hero {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 20px 60px 20px;
+            width: 100%;
+        }
+
+        .hero-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 15px;
+            background: linear-gradient(to right, #fff, var(--text-muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1.5px;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            width: 100%;
+            max-width: 1100px;
+            /* Жестко фиксируем высоту, чтобы список не растягивал страницу */
+            height: 600px; 
+            align-items: stretch;
+        }
+
+        /* ====== СТЕКЛО ====== */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(30px) saturate(150%);
+            -webkit-backdrop-filter: blur(30px) saturate(150%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6), 
+                        inset 0 1px 0 var(--glass-highlight),
+                        inset 0 -1px 0 rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255, 51, 102, 0.1), transparent);
+            transform: skewX(-20deg);
+            animation: shine 6s infinite;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            20% { left: 200%; }
+            100% { left: 200%; }
+        }
+
+        /* ====== ГЕНЕРАТОР ====== */
+        .generator-panel { padding: 40px; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .input-group.full { grid-column: span 2; }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        input:focus {
+            border-color: var(--accent-cherry);
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.25);
+            background: rgba(30, 5, 15, 0.6);
+        }
+
+        .btn-generate {
+            width: 100%;
+            padding: 20px;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--accent-cherry), var(--accent-wine));
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(255, 51, 102, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: auto;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(255, 51, 102, 0.5);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ====== КАСТОМНЫЙ ЛИСТ ЛОГОВ ====== */
+        .log-panel {
+            padding: 0;
+        }
+
+        .log-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.2);
+            flex-shrink: 0; /* Хедер не сжимается */
+        }
+
+        .log-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--accent-light);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #555;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+
+        .status-dot.active {
+            background: var(--log-success);
+            box-shadow: 0 0 10px var(--log-success);
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { opacity: 1; }
+            to { opacity: 0.4; }
+        }
+
+        /* Сам список (скроллится внутри) */
+        .log-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Кастомный скроллбар для листа */
+        .log-list::-webkit-scrollbar { width: 8px; }
+        .log-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .log-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 51, 102, 0.5);
+            border-radius: 10px;
+            border: 2px solid rgba(0,0,0,0.2);
+        }
+        .log-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 51, 102, 0.8);
+        }
+
+        /* Элемент списка (Кастомная плашка) */
+        .log-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            animation: slideIn 0.15s ease-out forwards;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .log-item:hover {
+            background: rgba(255, 51, 102, 0.08);
+            border-color: rgba(255, 51, 102, 0.3);
+        }
+
+        @keyframes slideIn {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Иконки */
+        .log-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+        .log-icon svg {
+            width: 14px;
+            height: 14px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .log-item.info .log-icon { background: rgba(255, 153, 187, 0.15); color: var(--log-info); }
+        .log-item.success .log-icon { background: rgba(0, 255, 136, 0.15); color: var(--log-success); }
+        .log-item.error .log-icon { background: rgba(255, 51, 102, 0.15); color: var(--log-error); }
+
+        .log-item.success { color: #a4ffb8; border-left: 2px solid var(--log-success); }
+        .log-item.error { color: #ffa4b8; border-left: 2px solid var(--log-error); }
+        .log-item.info { color: #ffb8cc; border-left: 2px solid var(--log-info); }
+
+        /* ====== ИНФО ====== */
+        .info-section {
+            width: 100%;
+            max-width: 1100px;
+            margin: 60px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .info-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .info-card h3 { font-size: 1.3rem; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .info-card p { color: var(--text-muted); line-height: 1.7; font-size: 0.95rem; }
+
+        .warning-card {
+            grid-column: span 2;
+            border-color: rgba(255, 51, 102, 0.4);
+            background: linear-gradient(180deg, rgba(153, 0, 51, 0.15), rgba(30, 10, 18, 0.4));
+        }
+        .warning-card h3 { color: var(--accent-light); }
+
+        .features { display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
+        .feature-badge {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid var(--glass-border);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent-cherry);
+        }
+
+        /* ====== АДАПТИВ ====== */
+        @media (max-width: 900px) {
+            .workspace-grid { grid-template-columns: 1fr; height: auto; min-height: 800px; }
+            .info-section { grid-template-columns: 1fr; }
+            .warning-card { grid-column: span 1; }
+            .hero h1 { font-size: 2.5rem; }
+            .navbar { padding: 15px 20px; }
+            .nav-links { display: none; }
+            .log-panel { height: 400px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            GD Generator
+        </div>
+        <div class="nav-links">
+            <a href="#">Генератор</a>
+            <a href="#">О проекте</a>
+            <a href="#">GitHub</a>
+        </div>
+    </nav>
+
+    <main class="hero">
+        <div class="hero-header">
+            <h1>Создавай уровни<br>за секунды</h1>
+            <p>Продвинутый алгоритмический генератор для Geometry Dash. Настраивай параметры, следи за процессом в реальном времени и скачивай уровни в формате .gdlvl.</p>
+        </div>
+
+        <div class="workspace-grid">
+            <div class="glass-panel generator-panel">
+                <div class="form-grid">
+                    <div class="input-group full">
+                        <label>Название уровня</label>
+                        <input type="text" id="name" value="RANDOM" placeholder="Введите название...">
+                    </div>
+                    <div class="input-group">
+                        <label>Seed (Зерно)</label>
+                        <input type="number" id="seed" placeholder="Случайно">
+                    </div>
+                    <div class="input-group">
+                        <label>Секции (Длина)</label>
+                        <input type="number" id="secs" value="6" min="2" max="14">
+                    </div>
+                </div>
+                <button class="btn-generate" id="go">Сгенерировать уровень</button>
+            </div>
+
+            <!-- КАСТОМНЫЙ ЛИСТ -->
+            <div class="glass-panel log-panel">
+                <div class="log-header">
+                    <div class="log-title">
+                        <div class="status-dot" id="statusDot"></div>
+                        Live List
+                    </div>
+                </div>
+                <div class="log-list" id="logList"></div>
+            </div>
+        </div>
+    </main>
+
+    <section class="info-section">
+        <div class="info-card">
+            <h3>⚙️ Как это работает?</h3>
+            <p>В основе генератора лежит математическая симуляция физики движка Geometry Dash. Алгоритм просчитывает траектории прыжков, скорость и хитбоксы, чтобы создать связный маршрут.</p>
+            <div class="features">
+                <span class="feature-badge">2.2 Ready</span>
+                <span class="feature-badge">.gdlvl Format</span>
+                <span class="feature-badge">Cube & Wave</span>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <h3>🚀 Почему это круто?</h3>
+            <p>Больше не нужно страдать над расстановкой блоков вручную. Задай длину, нажми кнопку и получи готовый уровень, который можно сразу импортировать через встроенный GDShare.</p>
+            <div class="features">
+                <span class="feature-badge">Fast</span>
+                <span class="feature-badge">Open Source</span>
+                <span class="feature-badge">Auto-Save</span>
+            </div>
+        </div>
+
+        <div class="info-card warning-card">
+            <h3>⚠️ Важное предупреждение</h3>
+            <p>Несмотря на то, что генератор использует симуляцию физики для проверки препятствий, мы <b>НЕ ГАРАНТИРУЕМ, что уровень будет возможным (possible)</b>. Из-за случайной генерации могут возникать баги физики, непроходимые тайминги или невозможные прыжки.</p>
+        </div>
+    </section>
+
+    <script>
+        const G = 0.958199, JUMP = 11.180032, VMAX = 15;
+        const SPD = {1: 311.58, 2: 387.42, 3: 468.0, 4: 576.0};
+        const SP_ID = {1: 201, 2: 202, 3: 203, 4: 1334};
+        const MARGIN = 3, CH = 15, WH = 7;
+        const cell = i => 15 + 30 * i;
+        const r3 = v => Math.round(v * 1000) / 1000;
+
+        class World {
+            constructor() { this.objs = []; this.solids = new Set(); this.hz = new Map(); this.hzl = []; this.events = []; this.slog = []; }
+            obj(id, x, y, rot = 0) { this.objs.push([id, x, y, rot]); }
+            block(ix, iy) {
+                const k = ix + ',' + iy;
+                if (this.solids.has(k)) return;
+                this.solids.add(k); this.slog.push(k); this.obj(1, cell(ix), cell(iy));
+            }
+            spike(x, y, rot = 0) {
+                this.obj(8, x, y, rot);
+                const m = MARGIN;
+                const r = rot === 0 ? [x - 6 - m, x + 6 + m, y - 15, y - 15 + 18 + m]
+                                    : [x - 6 - m, x + 6 + m, y + 15 - (18 + m), y + 15];
+                this.hzl.push(r);
+                for (let c = Math.floor(r[0] / 30); c <= Math.floor(r[1] / 30); c++) {
+                    if (!this.hz.has(c)) this.hz.set(c, []);
+                    this.hz.get(c).push(r);
+                }
+            }
+            portal(id, x, y, kind, val) { this.obj(id, x, y); this.events.push([x, kind, val]); this.events.sort((a, b) => a[0] - b[0]); }
+            mark() { return [this.objs.length, this.hzl.length, this.events.length, this.slog.length]; }
+            rollback(m) {
+                this.objs.length = m[0];
+                for (const r of this.hzl.slice(m[1])) {
+                    for (let c = Math.floor(r[0] / 30); c <= Math.floor(r[1] / 30); c++) {
+                        const a = this.hz.get(c); a.splice(a.indexOf(r), 1);
+                    }
+                }
+                this.hzl.length = m[1];
+                this.events.length = m[2];
+                for (const k of this.slog.slice(m[3])) this.solids.delete(k);
+                this.slog.length = m[3];
+            }
+            hitHz(x0, x1, y0, y1) {
+                for (let c = Math.floor(x0 / 30); c <= Math.floor((x1 - 1e-9) / 30); c++) {
+                    const a = this.hz.get(c); if (!a) continue;
+                    for (const r of a) if (x0 < r[1] && x1 > r[0] && y0 < r[3] && y1 > r[2]) return true;
+                }
+                return false;
+            }
+            solidsIn(x0, x1, y0, y1) {
+                const out = [];
+                for (let ix = Math.floor(x0 / 30); ix <= Math.floor((x1 - 1e-9) / 30); ix++)
+                    for (let iy = Math.floor(y0 / 30); iy <= Math.floor((y1 - 1e-9) / 30); iy++)
+                        if (this.solids.has(ix + ',' + iy)) out.push([ix, iy]);
+                return out;
+            }
+        }
+
+        function cubeStep(w, st, nx, grav) {
+            const [y, vy, g] = st; const outs = [];
+            for (const j of (g ? [0, 1] : [0])) {
+                let vyn;
+                if (g && j) vyn = JUMP * grav;
+                else { vyn = vy - G * grav; vyn = grav > 0 ? Math.max(vyn, -VMAX) : Math.min(vyn, VMAX); }
+                let ny = y + vyn, grounded = 0, dead = false;
+                if (grav > 0 && ny - CH < 0) { ny = CH; vyn = 0; grounded = 1; }
+                let ok = false;
+                for (let t = 0; t < 4; t++) {
+                    const cs = w.solidsIn(nx - CH, nx + CH, ny - CH, ny + CH);
+                    if (!cs.length) { ok = true; break; }
+                    const iy = cs[0][1], top = 30 * iy + 30, bot = 30 * iy;
+                    if (grav > 0) {
+                        if (vyn <= 0 && (y - CH) >= top - 4) { ny = top + CH; vyn = 0; grounded = 1; } else { dead = true; break; }
+                    } else {
+                        if (vyn >= 0 && (y + CH) <= bot + 4) { ny = bot - CH; vyn = 0; grounded = 1; } else { dead = true; break; }
+                    }
+                }
+                if (dead || !ok) continue;
+                if (w.hitHz(nx - CH, nx + CH, ny - CH, ny + CH)) continue;
+                outs.push([r3(ny), r3(vyn), grounded]);
+            }
+            return outs;
+        }
+
+        function waveStep(w, y, nx, vpf) {
+            const outs = [];
+            for (const d of [1, -1]) {
+                let ny = Math.min(Math.max(y + d * vpf, WH), 300 - WH);
+                if (w.solidsIn(nx - WH, nx + WH, ny - WH, ny + WH).length) continue;
+                if (w.hitHz(nx - WH, nx + WH, ny - WH, ny + WH)) continue;
+                outs.push(Math.round(ny * 100) / 100);
+            }
+            return outs;
+        }
+
+        function advance(w, fr, xt, stats) {
+            let states = fr.states, x = fr.x, speed = fr.speed, mode = fr.mode, grav = fr.grav, ev = fr.ev;
+            while (x < xt) {
+                const vpf = SPD[speed] / 60, nx = x + vpf;
+                const nw = new Map();
+                if (mode === 'cube') {
+                    for (const st of states.values()) for (const o of cubeStep(w, st, nx, grav)) nw.set(o.join('|'), o);
+                } else {
+                    for (const st of states.values()) for (const y of waveStep(w, st[0], nx, vpf)) nw.set(String(y), [y, 0, 0]);
+                }
+                if (!nw.size) return null;
+                states = nw; x = nx;
+                if (stats && mode === 'wave') stats.push(states.size);
+                while (ev < w.events.length && w.events[ev][0] <= x) {
+                    const [, kind, val] = w.events[ev]; ev++;
+                    if (kind === 'speed') speed = val;
+                    else if (kind === 'grav') { grav = val; const m = new Map(); for (const s of states.values()) { const t = [s[0], s[1], 0]; m.set(t.join('|'), t); } states = m; }
+                    else if (kind === 'mode') {
+                        if (val !== mode) { const m = new Map(); for (const s of states.values()) { const t = [s[0], 0, 0]; m.set(t.join('|'), t); } states = m; }
+                        mode = val;
+                    }
+                }
+            }
+            return { states, x, speed, mode, grav, ev };
+        }
+        const freshFrontier = () => ({ states: new Map([['15|0|1', [15, 0, 1]]]), x: 0, speed: 1, mode: 'cube', grav: 1, ev: 0 });
+
+        function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+        function generate(seed, nSections, log) {
+            const rand = mulberry32(seed);
+            const ri = (a, b) => a + Math.floor(rand() * (b - a + 1));
+            const pick = a => a[Math.floor(rand() * a.length)];
+            const w = new World();
+            let fr = freshFrontier(), x = 0, curSpeed = 1;
+
+            const lane = flip => ({ flip, base: flip ? 255 : 15, rot: flip ? 180 : 0, d: flip ? -1 : 1,
+                iy(k) { return flip ? 8 - k : k; }, y(k) { return this.base + this.d * 30 * k; } });
+            const advFree = (f, xt, tag) => { const r = advance(w, f, xt); if (!r) throw new Error('dead ' + tag); return r; };
+
+            const pSpikes = (x0, L, n) => { for (let i = 0; i < n; i++) w.spike(x0 + 30 * i, L.base, L.rot); return x0 + 30 * n - 15; };
+            const pBlocks = (x0, L, n, h) => { const ix0 = Math.floor((x0 - 15) / 30); for (let i = 0; i < n; i++) for (let k = 0; k < h; k++) w.block(ix0 + i, L.iy(k)); return x0 + 30 * n - 15; };
+            const pBlocksSpike = (x0, L, n, h, cols) => { const e = pBlocks(x0, L, n, h); for (const c of cols) w.spike(x0 + 30 * c, L.y(h), L.rot); return e; };
+            const pStairs = (x0, L, hs) => { const ix0 = Math.floor((x0 - 15) / 30); hs.forEach((h, i) => { for (let k = 0; k < h; k++) w.block(ix0 + i, L.iy(k)); }); return x0 + 30 * hs.length - 15; };
+
+            function pieceMaker(speed, L) {
+                const maxrun = { 1: 3, 2: 4, 3: 6, 4: 8 }[speed];
+                const kinds = [
+                    () => { const n = ri(1, maxrun); return x0 => pSpikes(x0, L, n); },
+                    () => { const n = ri(1, maxrun); return x0 => pSpikes(x0, L, n); },
+                    () => { const n = ri(1, maxrun); return x0 => pSpikes(x0, L, n); },
+                    () => { const a = ri(1, Math.min(3, maxrun)), b = ri(1, Math.min(3, maxrun)), g = ri(1, 3); return x0 => pSpikes(pSpikes(x0, L, a) + 15 + 30 * g, L, b); },
+                    () => { const a = ri(1, Math.min(3, maxrun)), b = ri(1, Math.min(3, maxrun)), g = ri(1, 3); return x0 => pSpikes(pSpikes(x0, L, a) + 15 + 30 * g, L, b); },
+                    () => { const n = ri(1, 4), h = pick([1, 1, 2]); return x0 => pBlocks(x0, L, n, h); },
+                    () => { const n = ri(3, 6), h = pick([1, 1, 2]); const cols = rand() < 0.7 ? [ri(1, n - 2)] : [1, n - 2]; return x0 => pBlocksSpike(x0, L, n, h, [...new Set(cols)].sort()); },
+                    () => { const n = ri(3, 6), h = pick([1, 1, 2]); const cols = rand() < 0.7 ? [ri(1, n - 2)] : [1, n - 2]; return x0 => pBlocksSpike(x0, L, n, h, [...new Set(cols)].sort()); },
+                    () => { const hs = pick([[1, 2], [1, 2, 1], [2, 1], [1, 1, 2, 2], [2, 2, 1]]); return x0 => pStairs(x0, L, hs); },
+                    () => { const a = ri(1, 2), g = ri(2, 4), n = ri(1, 3), b = ri(1, 2), g2 = ri(2, 4); return x0 => { let e = pSpikes(x0, L, a); e = pBlocks(e + 15 + 30 * g, L, n, 1); return pSpikes(e + 15 + 30 * g2, L, b); }; },
+                ];
+                return () => pick(kinds)();
+            }
+
+            function genCube(xs, xe, speed, L) {
+                let cx = xs; const mk = pieceMaker(speed, L);
+                while (cx < xe) {
+                    let placed = false;
+                    for (let t = 0; t < 80; t++) {
+                        const m = w.mark();
+                        const x0 = cell(Math.floor((cx + 30 * ri(0, 3) - 15) / 30));
+                        const xe2 = mk()(x0);
+                        const f = advance(w, fr, xe2 + 45);
+                        if (!f) { w.rollback(m); continue; }
+                        fr = f; cx = xe2 + 45; placed = true; break;
+                    }
+                    if (!placed) { cx += 150; fr = advFree(fr, cx, 'cube'); }
+                }
+                return cx;
+            }
+
+            function buildPath(n, c0, cEnd, spamAt, spamLen, tail) {
+                const ymin = 75, ymax = 255; const path = [], tight = [];
+                let c = c0, i = 0, d = -1; const plan = n - tail; spamAt = spamAt.slice().sort((a, b) => a - b);
+                while (i < plan) {
+                    if (spamAt.length && i >= spamAt[0]) {
+                        spamAt.shift(); const m = Math.min(spamLen, plan - i), cc = c - 15;
+                        for (let k = 0; k < m; k++) { path.push(cc + (k % 2 ? 30 : 0)); tight.push(true); i++; }
+                        continue;
+                    }
+                    const r = plan - i, need = Math.abs(c - cEnd) / 30;
+                    if (r <= need + 12) {
+                        const dd = cEnd > c ? 1 : -1;
+                        for (let k = 0; k < Math.min(need, r); k++) { path.push(c); tight.push(false); c += dd * 30; i++; }
+                        while (i < plan) { path.push(c); tight.push(false); i++; }
+                        break;
+                    }
+                    d = -d;
+                    let feas = d > 0 ? Math.floor((ymax - c) / 30) : Math.floor((c - ymin) / 30);
+                    if (feas < 1) { d = -d; feas = d > 0 ? Math.floor((ymax - c) / 30) : Math.floor((c - ymin) / 30); }
+                    let seg = Math.max(1, Math.min(pick([1, 1, 2, 2, 3, 4]), feas, plan - i));
+                    for (let k = 0; k < seg; k++) { path.push(c); tight.push(false); c += d * 30; i++; }
+                }
+                path.length = Math.min(path.length, plan); tight.length = path.length;
+                for (let k = 0; k < tail; k++) { path.push(cEnd); tight.push(false); }
+                return [path, tight];
+            }
+
+            function layCorridor(ix0, path, tight, taper, tail) {
+                const n = path.length;
+                path.forEach((c, i) => {
+                    let half;
+                    if (i >= n - tail) half = 45; else if (tight[i]) half = 30;
+                    else if (taper && i < 4) half = 135; else if (taper && i < 8) half = 105; else if (taper && i < 12) half = 75; else half = 45;
+                    for (let iy = 0; iy < 10; iy++) if (Math.abs(cell(iy) - c) >= half) w.block(ix0 + i, iy);
+                });
+            }
+
+            function secCube(speed) {
+                let xp = x;
+                if (speed !== curSpeed) {
+                    xp = cell(Math.floor((x + 150) / 30));
+                    w.portal(SP_ID[speed], xp, 60, 'speed', speed);
+                    log(`Speed change to ${speed}x`);
+                    fr = advFree(fr, xp + 300, 'pre'); curSpeed = speed; xp += 450;
+                } else xp = x + 150;
+                log(`Generating Cube section (${speed}x)...`);
+                x = genCube(xp, xp + ri(1400, 2600), speed, lane(false));
+                log(`Cube section completed!`);
+            }
+
+            function secFlip() {
+                log(`Initializing Flip (Gravity) portal...`);
+                if (curSpeed !== 2) { const xp = cell(Math.floor((x + 150) / 30)); w.portal(SP_ID[2], xp, 60, 'speed', 2); fr = advFree(fr, xp + 240, 'pre'); curSpeed = 2; x = xp + 240; }
+                const xs = cell(Math.floor((x + 150) / 30));
+                const xFlip = xs + 480, len = ri(1200, 1800), xExit = xFlip + len;
+                for (let ix = Math.floor((xs - 15) / 30); ix < Math.floor((xExit + 300 - 15) / 30); ix++) w.block(ix, 9);
+                fr = advFree(fr, xFlip - 120, 'f1');
+                w.portal(11, xFlip, 60, 'grav', -1);
+                fr = advFree(fr, xFlip + 480, 'f2');
+                genCube(xFlip + 600, xExit - 300, 2, lane(true));
+                w.portal(10, xExit, 225, 'grav', 1);
+                fr = advFree(fr, xExit + 600, 'f3');
+                x = xExit + 900;
+                log(`Flip section completed!`);
+            }
+
+            function secWave() {
+                const sp = pick([3, 4]);
+                log(`Generating Wave section (${sp}x)...`);
+                const xp = cell(Math.floor((x + 150) / 30));
+                if (sp !== curSpeed) { w.portal(SP_ID[sp], xp, 60, 'speed', sp); curSpeed = sp; }
+                fr = advFree(fr, xp + 300, 'w0');
+                const xw = cell(Math.floor((xp + 450) / 30));
+                w.portal(660, xw, 60, 'mode', 'wave');
+                const n = ri(44, 72), ix0 = Math.floor((xw + 150 - 15) / 30);
+                const sp1 = ri(10, 16), sp2 = ri(30, 44);
+                const [path, tight] = buildPath(n, 105, 165, [sp1, sp2], ri(8, 12), 8);
+                layCorridor(ix0, path, tight, true, 8);
+                const xEnd = cell(ix0 + n);
+                w.portal(12, cell(ix0 + n - 6), 165, 'mode', 'cube');
+                fr = advFree(fr, xEnd + 200, 'wave');
+                x = xEnd + 900;
+                log(`Wave section completed!`);
+            }
+
+            w.portal(SP_ID[2], 210, 60, 'speed', 2); curSpeed = 2;
+            fr = advFree(fr, 600, 'start'); x = 720;
+            
+            log(`Generating initial Cube sequence...`);
+            genCube(720, 720 + ri(1500, 2200), 2, lane(false));
+            
+            x = (function () { let mx = 720; for (const o of w.objs) mx = Math.max(mx, o[1]); return mx + 45; })();
+            
+            const types = ['cube2', 'cube3', 'cube4', 'cube3', 'cube4', 'flip', 'wave', 'wave'];
+            for (let s = 0; s < nSections; s++) {
+                const t = pick(types);
+                for (let attempt = 0; attempt < 12; attempt++) {
+                    const m = w.mark(), sfr = fr, sx = x, ss = curSpeed;
+                    try {
+                        if (t === 'flip') secFlip(); 
+                        else if (t === 'wave') secWave(); 
+                        else secCube(+t[4]);
+                        log(`Section ${s + 1} [${t}] verified [OK]`); 
+                        break;
+                    } catch (e) { w.rollback(m); fr = sfr; x = sx; curSpeed = ss; }
+                }
+            }
+            const xFin = cell(Math.floor((x + 300) / 30));
+            fr = advFree(fr, xFin, 'fin');
+            for (let k = 0; k < 6; k++) w.block(Math.floor((xFin + 600 - 15) / 30), k);
+            return w;
+        }
+
+        function fmtObj(o) { let s = `1,${o[0]},2,${Math.round(o[1])},3,${Math.round(o[2])}`; if (o[3]) s += `,6,${o[3]}`; return s; }
+        function ch(i, r, g, b, blend) { return `1_${r}_2_${g}_3_${b}_11_255_12_255_13_255_4_-1_6_${i}_` + (blend ? '5_1_' : '') + '7_1_15_1_18_0_8_1'; }
+        
+        function levelString(w) {
+            const chans = [ch(1000, 8, 0, 40), ch(1001, 30, 0, 80), ch(1009, 45, 0, 110), ch(1002, 255, 255, 255, 1),
+                ch(1013, 90, 30, 200), ch(1014, 90, 30, 200), ch(1005, 125, 255, 0, 1), ch(1006, 255, 255, 255, 1)].join('|') + '|';
+            const header = 'kS38,' + chans + ',kA13,0,kA15,0,kA16,0,kA14,,kA6,0,kA7,0,kA25,0,kA17,0,kA18,0,kS39,0,kA2,0,kA3,0,kA8,0,kA4,0,kA9,0,kA10,0,kA22,0,kA23,0,kA24,0,kA27,1,kA40,1,kA57,1,kA58,1,kA48,1,kA41,1,kA42,1,kA63,0,kA29,0,kA31,1,kA32,1,kA36,0,kA43,0,kA44,0,kA45,1,kA46,0,kA47,0,kA33,1,kA34,1,kA35,0,kA37,1,kA38,1,kA39,1,kA19,0,kA26,0,kA20,0,kA21,0,kA49,0,kA50,0,kA51,0,kA52,0,kA53,,kA54,0,,,,,,,kA11,0';
+            const objs = w.objs.slice().sort((a, b) => a[1] - b[1]);
+            return [header + ';' + objs.map(fmtObj).join(';') + ';', objs.length];
+        }
+
+        async function gz(str) {
+            const cs = new CompressionStream('gzip');
+            const wr = cs.writable.getWriter(); wr.write(new TextEncoder().encode(str)); wr.close();
+            const buf = new Uint8Array(await new Response(cs.readable).arrayBuffer());
+            let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+            return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_');
+        }
+
+        async function buildFile(w, name) {
+            const [lv, n] = levelString(w);
+            const k4 = await gz(lv);
+            const zeros = '0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0';
+            let d = ''; for (let i = 0; i <= 13; i++) d += `<k>${i}</k><s>0</s>`;
+            const xml = `<?xml version="1.0"?><plist version="1.0" gjver="2.0"><dict><k>kCEK</k><i>4</i><k>k2</k><s>${name.replace(/[<>&]/g, '')}</s><k>k4</k><s>${k4}</s><k>k101</k><s>${zeros}</s><k>k13</k><t /><k>k21</k><i>2</i><k>k48</k><i>${n}</i><k>k80</k><i>1</i><k>k156</k><s>1,0,0,0,0,0,0,0,0,77,0,0,0,0,0,0,0,0,2,1,1792526753,0,0</s><k>k50</k><i>51</i><k>kI1</k><r>-40.5926</r><k>kI2</k><r>-28.2963</r><k>kI3</k><r>1</r><k>kI6</k><d>${d}</d></dict></plist>`;
+            return [await gz(xml), n];
+        }
+
+        // ====== КАСТОМНЫЙ ЛИСТ (МГНОВЕННЫЙ ВЫВОД) ======
+        const logList = document.getElementById('logList');
+        const statusDot = document.getElementById('statusDot');
+
+        function addLog(message, type = 'info') {
+            const item = document.createElement('div');
+            item.className = `log-item ${type}`;
+            
+            let iconSvg = '';
+            if (type === 'success') {
+                iconSvg = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            } else if (type === 'error') {
+                iconSvg = '<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+            } else {
+                iconSvg = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+            }
+
+            item.innerHTML = `
+                <div class="log-icon">${iconSvg}</div>
+                <div>${message}</div>
+            `;
+            
+            logList.appendChild(item);
+            logList.scrollTop = logList.scrollHeight;
+        }
+
+        function clearLogs() {
+            logList.innerHTML = '';
+        }
+
+        // ====== ГЛАВНАЯ ФУНКЦИЯ ======
+        document.getElementById('go').onclick = async () => {
+            const btn = document.getElementById('go');
+            
+            btn.disabled = true;
+            btn.textContent = 'Генерация...';
+            statusDot.classList.add('active');
+            clearLogs();
+
+            const log = (s) => {
+                let type = 'info';
+                if (s.includes('Ошибка') || s.includes('dead') || s.includes('Критическая')) type = 'error';
+                if (s.includes('Успех') || s.includes('[OK]') || s.includes('Валидация') || s.includes('completed')) type = 'success';
+                addLog(s, type);
+            };
+            
+            let seed = parseInt(document.getElementById('seed').value);
+            if (!seed) seed = Math.floor(Math.random() * 1e9);
+            
+            const name = document.getElementById('name').value || 'RANDOM';
+            const secs = +document.getElementById('secs').value || 6;
+            
+            log(`Инициализация... Seed: ${seed}`);
+            
+            setTimeout(async () => {
+                try {
+                    log('Запуск симулятора физики...');
+                    const w = generate(seed, secs, log);
+                    log('Формирование .gdlvl файла...');
+                    const [b64, n] = await buildFile(w, name + ' ' + seed);
+                    log(`Успех! Объектов: ${n}`);
+                    log('Валидация симулятором: PASSED');
+                    log('Внимание: уровень не гарантирует 100% проходимость!');
+                    
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(new Blob([b64], { type: 'text/plain' }));
+                    a.download = name + '_' + seed + '.gdlvl'; 
+                    document.body.appendChild(a); 
+                    a.click(); 
+                    a.remove();
+                    
+                    btn.textContent = '✅ Скачано';
+                    setTimeout(() => { btn.textContent = 'Сгенерировать уровень'; }, 3000);
+                } catch (e) { 
+                    log('Критическая ошибка: ' + e.message); 
+                    btn.textContent = '❌ Ошибка';
+                    setTimeout(() => { btn.textContent = 'Попробовать снова'; }, 3000);
+                } finally {
+                    btn.disabled = false;
+                    statusDot.classList.remove('active');
+                }
+            }, 50);
+        };
+    </script>
+</body>
+</html>
